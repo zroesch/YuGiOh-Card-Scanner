@@ -1,0 +1,20 @@
+package com.example.yugiohcardscanner.di
+
+import com.example.yugiohcardscanner.repository.CardRepository
+import com.example.yugiohcardscanner.repository.FirebaseCardRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindCardRepository(
+        impl: FirebaseCardRepository
+    ): CardRepository
+}
