@@ -21,6 +21,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 
+/**
+ * Composable function to display a live camera preview.
+ *
+ * This function uses the CameraX library to display a real-time camera preview
+ * within the UI. It also sets up an [ImageCapture] instance for taking pictures.
+ *
+ * @param enabled Whether the camera preview is enabled.
+ * @param onImageCaptureReady Callback to provide the [ImageCapture] instance once it's ready.
+ */
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
 fun CameraPreview(
@@ -58,18 +67,8 @@ fun CameraPreview(
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .build()
-                //callback that set the instance of image capture to the scanner screen
+                // Callback that sets the instance of image capture to the scanner screen.
                 imageCapture?.let { onImageCaptureReady(it) }
-
-                // We no longer need the image analyzer
-                //val imageAnalyzer = ImageAnalysis.Builder()
-                //    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                //    .build()
-                //    .also { analysis ->
-                //        analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                //            imageProxy.close()
-                //        }
-                //    }
 
                 try {
                     cameraProvider.unbindAll()
@@ -78,7 +77,6 @@ fun CameraPreview(
                         CameraSelector.DEFAULT_BACK_CAMERA,
                         preview,
                         imageCapture,
-                        //imageAnalyzer // Remove the image analyzer
                     )
                 } catch (e: Exception) {
                     Log.e("CameraPreview", "Use case binding failed", e)

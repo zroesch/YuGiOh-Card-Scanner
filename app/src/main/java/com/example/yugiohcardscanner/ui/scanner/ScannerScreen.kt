@@ -2,8 +2,8 @@ package com.example.yugiohcardscanner.ui.scanner
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
 import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,6 +13,7 @@ import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +30,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -51,25 +54,39 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import com.example.yugiohcardscanner.R
 import com.example.yugiohcardscanner.ui.scanner.components.CameraPreview
 import com.example.yugiohcardscanner.ui.scanner.components.CardPreview
 import com.example.yugiohcardscanner.ui.scanner.components.ErrorMessage
 import com.example.yugiohcardscanner.ui.scanner.components.ScanningPrompt
 import com.google.mlkit.vision.common.InputImage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+/**
+ * Composable function for the main scanner screen.
+ *
+ * This screen allows the user to scan cards using the camera or select images from the gallery.
+ * It handles camera permissions, image capture, gallery access, and card scanning states.
+ *
+ * @param viewModel The [ScannerViewModel] for managing the scanner state and data.
+ * @param onNavigateBack Callback to navigate back to the previous screen.
+ * @param navController The [NavHostController] for navigation.
+ */
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun ScannerScreen(
     viewModel: ScannerViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
-    onNavigateToReview: () -> Unit = {}
+    navController: NavHostController
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val scanningState = viewModel.scanningState
+    val scanningState by viewModel.scanningState
+    val scannedCards by viewModel.scannedCards
 
+    // State to track camera permission
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -79,12 +96,14 @@ fun ScannerScreen(
         )
     }
 
+    // Launcher for camera permission request
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasCameraPermission = isGranted
     }
 
+    // Launcher for gallery image selection
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -99,13 +118,16 @@ fun ScannerScreen(
                     }
                 } catch (e: Exception) {
                     Log.e("ScannerScreen", "Error processing gallery image", e)
+                    viewModel.setScanningStateError("Error processing image from gallery.")
                 }
             }
         }
     }
 
+    // State to hold the image capture instance
     var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
 
+    // Request camera permission on launch if not already granted
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -116,9 +138,10 @@ fun ScannerScreen(
         modifier = Modifier
             .fillMaxSize()
     ) {
+        // Show camera preview if permission is granted
         if (hasCameraPermission) {
             CameraPreview(
-                enabled = scanningState !is ScanningState.Success,
+                enabled = scanningState !is ScanningState.ReadyForReview,
                 onImageCaptureReady = { imageCapture = it }
             )
         }
@@ -126,8 +149,8 @@ fun ScannerScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding(),
-
+                .statusBarsPadding()
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -140,6 +163,7 @@ fun ScannerScreen(
                     .align(Alignment.Start),
                 contentAlignment = Alignment.CenterStart
             ) {
+                // Close button to navigate back
                 IconButton(
                     onClick = onNavigateBack,
                     modifier = Modifier.size(48.dp)
@@ -155,7 +179,7 @@ fun ScannerScreen(
             // Scanning Frame
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.90f)
+                    .fillMaxWidth(0.80f)
                     .aspectRatio(0.75f)
                     .background(
                         color = Color.White.copy(alpha = 0.2f),
@@ -163,9 +187,9 @@ fun ScannerScreen(
                     )
             )
 
-            Spacer(modifier = Modifier.height(32.dp))  // Spacing
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Shaded area
+            // Shaded area for controls and content
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -173,41 +197,57 @@ fun ScannerScreen(
                     .background(
                         color = Color.Black.copy(alpha = 0.6f),
                         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                    )
-                    .navigationBarsPadding(),
+                    ),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // State-specific content
-                    when (scanningState) {
-                        is ScanningState.Success -> {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                            ) {
-                                CardPreview(card = scanningState.card) {
+                    // Top Row: ScanningPrompt or CardPreview
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Content based on current scanning state
+                        when (val currentState = scanningState) {
+                            is ScanningState.ReadyForReview -> {
+                                LazyRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(scannedCards, key = { it.productId }) { card ->
+                                        CardPreview(card = card, onDismiss = {})
+                                    }
+                                }
+                            }
+
+                            is ScanningState.Error -> {
+                                ErrorMessage(message = currentState.message) {
                                     viewModel.resetScanningState()
                                 }
                             }
-                        }
 
-                        is ScanningState.Error -> {
-                            ErrorMessage(message = scanningState.message) {
-                                viewModel.resetScanningState()
+                            is ScanningState.Scanning -> {
+                                CircularProgressIndicator(color = Color.White)
                             }
-                        }
 
-                        is ScanningState.Scanning -> {
-                            CircularProgressIndicator(color = Color.White)
-                        }
-
-                        else -> {
-                            ScanningPrompt()
+                            else -> {
+                                if (scannedCards.isEmpty()) {
+                                    ScanningPrompt()
+                                } else {
+                                    LazyRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        items(scannedCards, key = { it.productId }) { card ->
+                                            CardPreview(card = card, onDismiss = {})
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -256,30 +296,20 @@ fun ScannerScreen(
                                     .background(Color.Gray, CircleShape)
                             )
                         }
-
-                        // Review button
+                        //Review button
                         IconButton(
                             onClick = {
-                                val testImage =
-                                    BitmapFactory.decodeResource(context.resources, R.drawable.card)
-                                val inputImage = InputImage.fromBitmap(testImage, 0)
-
-                                processImage(inputImage) { setCode ->
-                                    Log.d("ManualTest", "Detected: $setCode")
-                                    scope.launch {
-                                        viewModel.searchCardBySetCode(setCode)
-                                    }
-                                }
+                                viewModel.moveToReview()
                             },
-                            enabled = viewModel.scannedCards.isNotEmpty(),
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
                                 contentDescription = "Review",
-                                tint = if (viewModel.scannedCards.isNotEmpty())
-                                    Color.White
-                                else Color.White.copy(alpha = 0.5f),
+                                tint = if (scanningState is ScanningState.Scanning)
+                                    Color.White.copy(alpha = 0.5f)
+                                else
+                                    Color.White,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -290,50 +320,51 @@ fun ScannerScreen(
     }
 }
 
-private fun takePicture(
+/**
+ * Function to handle taking a picture with the camera.
+ *
+ * @param imageCapture The ImageCapture instance for capturing images.
+ * @param context The application context.
+ * @param viewModel The ScannerViewModel for handling the image processing.
+ * @param scope The CoroutineScope for launching coroutines.
+ */
+fun takePicture(
     imageCapture: ImageCapture,
-    context: android.content.Context,
+    context: Context,
     viewModel: ScannerViewModel,
-    scope: kotlinx.coroutines.CoroutineScope
+    scope: CoroutineScope
 ) {
-    val name = "photo_${System.currentTimeMillis()}.jpg"
-    val contentValues = ContentValues().apply {
-        put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-        put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-    }
+    viewModel.captureImage()
 
-    val outputOptions = ImageCapture.OutputFileOptions
-        .Builder(
-            context.contentResolver,
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            contentValues
-        )
-        .build()
+    val outputOptions = ImageCapture.OutputFileOptions.Builder(
+        context.contentResolver,
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        ContentValues()
+    ).build()
+
     imageCapture.takePicture(
         outputOptions,
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
-            override fun onError(exc: ImageCaptureException) {
-                Log.e("ScannerScreen", "Photo capture failed: ${exc.message}", exc)
-            }
-
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                Log.d("ScannerScreen", "Photo capture succeeded: ${output.savedUri}")
-                output.savedUri?.let {
+                output.savedUri?.let { uri ->
                     scope.launch {
                         try {
-                            val image = InputImage.fromFilePath(context, it)
+                            val image = InputImage.fromFilePath(context, uri)
                             processImage(image) { setCode ->
-                                scope.launch {
-                                    viewModel.searchCardBySetCode(setCode)
-                                }
+                                viewModel.onImageCaptured(setCode)
                             }
                         } catch (e: Exception) {
                             Log.e("ScannerScreen", "Error processing captured image", e)
+                            viewModel.setScanningStateError("Error processing captured image.")
                         }
                     }
                 }
             }
-        }
-    )
+
+            override fun onError(error: ImageCaptureException) {
+                Log.e("ScannerScreen", "Image capture failed", error)
+                viewModel.setScanningStateError("Image capture failed.")
+            }
+        })
 }
