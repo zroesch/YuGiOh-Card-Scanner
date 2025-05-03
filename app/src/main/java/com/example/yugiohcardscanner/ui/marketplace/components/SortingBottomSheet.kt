@@ -1,19 +1,34 @@
 package com.example.yugiohcardscanner.ui.marketplace.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import com.example.yugiohcardscanner.data.models.SortType
 
-
+/**
+ * Composable function for displaying a bottom sheet for sorting options.
+ *
+ * This function creates a modal bottom sheet that presents the user with
+ * different options for sorting cards, such as by price, name, or rarity.
+ *
+ * @param currentSort The currently selected sort type.
+ * @param onSortSelected Callback function triggered when a sort option is selected.
+ * @param onDismiss Callback function triggered when the bottom sheet is dismissed.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SortingBottomSheet(
@@ -23,10 +38,14 @@ fun SortingBottomSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = { onDismiss() },
-        containerColor = Color.DarkGray // ✅ No more `sheetShape`
+        containerColor = Color.DarkGray
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Sort By", style = MaterialTheme.typography.titleMedium, color = Color.White)
+            Text(
+                text = "Sort By",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
 
             val sortOptions = listOf(
                 SortType.PRICE_LOW_TO_HIGH to "Price: Low to High",
@@ -56,6 +75,3 @@ fun SortingBottomSheet(
         }
     }
 }
-
-
-

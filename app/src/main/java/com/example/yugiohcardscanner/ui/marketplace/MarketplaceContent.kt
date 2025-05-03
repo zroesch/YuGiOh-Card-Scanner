@@ -14,6 +14,16 @@ import androidx.compose.ui.unit.dp
 import com.example.yugiohcardscanner.data.models.CardData
 import com.example.yugiohcardscanner.ui.marketplace.components.CardItem
 
+/**
+ * Composable function for displaying the main content of the Marketplace screen.
+ *
+ * This function displays a grid of [CardItem] components, representing
+ * Yu-Gi-Oh! cards available in the marketplace.
+ *
+ * @param modifier Modifier for the content container.
+ * @param cards The list of [CardData] objects to display.
+ * @param onAddToCollection Callback function triggered when a card is added to the collection.
+ */
 @Composable
 fun MarketplaceContent(
     modifier: Modifier = Modifier,
