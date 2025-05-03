@@ -6,6 +6,15 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.regex.Pattern
 
+/**
+ * Processes an image to detect and extract a Yu-Gi-Oh! set code.
+ *
+ * This function uses the ML Kit Text Recognition API to analyze an image
+ * and search for a set code that matches a specific pattern.
+ *
+ * @param image The [InputImage] to be processed.
+ * @param onSetCodeFound Callback function to be invoked with the found set code.
+ */
 fun processImage(image: InputImage, onSetCodeFound: (String) -> Unit) {
     val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     recognizer.process(image)
