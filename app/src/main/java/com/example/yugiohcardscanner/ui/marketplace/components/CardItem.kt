@@ -1,32 +1,50 @@
 package com.example.yugiohcardscanner.ui.marketplace.components
 
 import android.util.Log
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.yugiohcardscanner.data.models.*
-import com.example.yugiohcardscanner.ui.marketplace.components.*
+import com.example.yugiohcardscanner.data.models.CardData
 
+/**
+ * Composable function for displaying a single card item in a list or grid.
+ *
+ * This function displays a card's image, name, set name, rarity, number,
+ * market price, and an "Add to Collection" button. It's designed to be used
+ * in a list or grid layout, such as in the Marketplace screen.
+ *
+ * @param card The [CardData] object containing the card's information.
+ * @param onAddToCollection Callback function to be executed when the
+ *   "Add to Collection" button is clicked.
+ * @param modifier Modifier to be applied to the card container.
+ */
 @Composable
 fun CardItem(
     card: CardData,
@@ -35,7 +53,7 @@ fun CardItem(
 ) {
     Card(
         modifier = modifier
-            .height(280.dp) // ✅ the agreed height (adjust if needed)
+            .height(280.dp) // Fixed height for the card
             .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(4.dp),
@@ -55,7 +73,7 @@ fun CardItem(
                     model = card.imageUrl,
                     contentDescription = card.name,
                     modifier = Modifier
-                        .height(150.dp) // ✅ controlled height
+                        .height(150.dp) // Fixed height for the image
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Fit
@@ -102,7 +120,7 @@ fun CardItem(
             ) {
                 Text(
                     text = "$${"%.2f".format(card.marketPrice)}",
-                    color = Color(0xFFD0D0D0), // match price color to rarity font
+                    color = Color(0xFFD0D0D0), // Match price color to rarity font
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
@@ -124,6 +142,3 @@ fun CardItem(
         }
     }
 }
-
-
-
