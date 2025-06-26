@@ -62,8 +62,7 @@ fun CollectionScreen(
                     onSortClick = { isSortSheetVisible = true }
                 )
             }
-        },
-        bottomBar = { BottomNavBar(navController) }
+        }
     ) { paddingValues ->
         if (isLoading) {
             Box(

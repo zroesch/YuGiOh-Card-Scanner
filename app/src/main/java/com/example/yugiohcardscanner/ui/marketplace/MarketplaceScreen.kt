@@ -52,7 +52,7 @@ fun MarketplaceScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.Black)
-                    .statusBarsPadding()
+//                    .statusBarsPadding()
                     .padding(horizontal = 8.dp)
             ) {
                 SearchBar(
@@ -64,8 +64,7 @@ fun MarketplaceScreen(
                     onCameraClick = { navController.navigate("scanner") }
                 )
             }
-        },
-        bottomBar = { BottomNavBar(navController) }
+        }
     ) { paddingValues ->
         MarketplaceContent(
             modifier = Modifier.padding(paddingValues),
