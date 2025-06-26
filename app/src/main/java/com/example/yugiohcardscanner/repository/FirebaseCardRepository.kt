@@ -30,7 +30,7 @@ class FirebaseCardRepository @Inject constructor(
      *
      * @return A list of [CardData] objects representing all cards loaded from Firestore.
      */
-    override suspend fun preloadAllCardsFromFirestore(): List<CardData> {
+    override suspend fun preloadAllCardsFromDataSource(): List<CardData> {
         Log.d("FirebaseCardRepo", "Starting preloadAllCardsFromFirestore")
         return try {
             val snapshot = firestore
@@ -73,7 +73,7 @@ class FirebaseCardRepository @Inject constructor(
      */
     override suspend fun findCardBySetCode(setCode: String): CardData? {
         return try {
-            val allCards = preloadAllCardsFromFirestore()
+            val allCards = preloadAllCardsFromDataSource()
             allCards.find { it.extNumber == setCode }
         } catch (e: Exception) {
             e.printStackTrace()

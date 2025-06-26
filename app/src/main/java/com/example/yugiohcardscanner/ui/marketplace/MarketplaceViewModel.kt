@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.yugiohcardscanner.data.models.CardData
 import com.example.yugiohcardscanner.data.models.SortType
 import com.example.yugiohcardscanner.repository.CardCacheRepository
-import com.example.yugiohcardscanner.repository.CardRepository
+import com.example.yugiohcardscanner.repository.CardRepository // Keep injecting the interface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,12 +21,12 @@ import javax.inject.Inject
  * including loading cards, filtering cards based on search queries,
  * sorting cards based on user preferences, and updating the UI state accordingly.
  *
- * @property firebaseCardRepository The repository for interacting with card data (Firestore).
+ * @property cardRepository The repository for interacting with card data (now CSV-based).
  * @property cardCacheRepository The repository for caching card data.
  */
 @HiltViewModel
 class MarketplaceViewModel @Inject constructor(
-    private val firebaseCardRepository: CardRepository,
+    private val cardRepository: CardRepository, // Hilt will provide CsvCardRepository here
     private val cardCacheRepository: CardCacheRepository
 ) : ViewModel() {
 
@@ -38,36 +38,48 @@ class MarketplaceViewModel @Inject constructor(
     }
 
     /**
-     * Loads the cards from the cache or Firestore.
+     * Loads the cards from the cache or the primary data source (CSV).
      *
      * This method first checks if cards are available in the cache. If not,
-     * it fetches them from Firestore, caches them, and then updates the UI state.
+     * it fetches them from the CSV data source via CardRepository, caches them,
+     * and then updates the UI state.
      */
     private fun loadCards() {
         viewModelScope.launch {
             Log.d("MarketplaceViewModel", "loadCards called")
+            _uiState.update { it.copy(isLoading = true) } // Optional: set loading state
+
             val cachedCards = cardCacheRepository.getCachedCards()
-            Log.d("MarketplaceViewModel", "Cached cards: ${cachedCards.size}")
+            Log.d("MarketplaceViewModel", "Cached cards count: ${cachedCards.size}")
 
             if (cachedCards.isNotEmpty()) {
                 _uiState.update {
                     Log.d("MarketplaceViewModel", "Using cached cards")
                     it.copy(
                         allCards = cachedCards,
-                        filteredCards = applySortAndFilter(cachedCards, it.searchQuery, it.selectedSort)
+                        filteredCards = applySortAndFilter(cachedCards, it.searchQuery, it.selectedSort),
+                        isLoading = false
                     )
                 }
             } else {
-                Log.d("MarketplaceViewModel", "Loading from Firestore")
-                val remoteCards = firebaseCardRepository.preloadAllCardsFromFirestore()
-                Log.d("MarketplaceViewModel", "Remote cards: ${remoteCards.size}")
-                cardCacheRepository.cacheCards(remoteCards)
+                Log.d("MarketplaceViewModel", "Cache empty. Loading from remote CSV data source.")
+                // Use the method from the CardRepository interface, which is now implemented by CsvCardRepository
+                val remoteCards = cardRepository.preloadAllCardsFromDataSource()
+                Log.d("MarketplaceViewModel", "Remote cards loaded from CSV: ${remoteCards.size}")
+
+                if (remoteCards.isNotEmpty()) {
+                    cardCacheRepository.cacheCards(remoteCards)
+                    Log.d("MarketplaceViewModel", "Remote cards cached.")
+                } else {
+                    Log.w("MarketplaceViewModel", "No cards were loaded from the remote CSV data source.")
+                }
 
                 _uiState.update {
-                    Log.d("MarketplaceViewModel", "Updating UI with remote cards")
+                    Log.d("MarketplaceViewModel", "Updating UI with remote cards from CSV")
                     it.copy(
                         allCards = remoteCards,
-                        filteredCards = applySortAndFilter(remoteCards, it.searchQuery, it.selectedSort)
+                        filteredCards = applySortAndFilter(remoteCards, it.searchQuery, it.selectedSort),
+                        isLoading = false
                     )
                 }
             }
@@ -122,8 +134,24 @@ class MarketplaceViewModel @Inject constructor(
         query: String,
         sortType: SortType
     ): List<CardData> {
-        return cards
-            .filter { it.name.contains(query, ignoreCase = true) }
-            .sortedWith(sortType.getComparator())
+        val filtered = if (query.isBlank()) {
+            cards
+        } else {
+            cards.filter {
+                it.name.contains(query, ignoreCase = true) ||
+                        it.setName.contains(query, ignoreCase = true) || // Optional: also search by set name
+                        it.extNumber.contains(query, ignoreCase = true)  // Optional: also search by card number
+            }
+        }
+        return filtered.sortedWith(sortType.getComparator())
     }
 }
+
+// Ensure your MarketplaceUiState includes isLoading if you use it:
+// data class MarketplaceUiState(
+//    val allCards: List<CardData> = emptyList(),
+//    val filteredCards: List<CardData> = emptyList(),
+//    val searchQuery: String = "",
+//    val selectedSort: SortType = SortType.NAME_ASC, // Default sort
+//    val isLoading: Boolean = false
+// )

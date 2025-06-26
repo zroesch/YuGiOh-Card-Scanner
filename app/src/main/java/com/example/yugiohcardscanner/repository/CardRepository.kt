@@ -2,39 +2,18 @@ package com.example.yugiohcardscanner.repository
 
 import com.example.yugiohcardscanner.data.models.CardData
 
-/**
- * Interface for managing card data.
- *
- * This interface defines the methods for interacting with a card data source,
- * such as loading cards from Firestore or retrieving cached cards.
- * Concrete implementations of this interface handle the specifics of where
- * and how card data is stored and retrieved.
- */
 interface CardRepository {
     /**
-     * Loads all cards from the data source (e.g., Firestore).
-     *
-     * @return A list of [CardData] objects representing all cards.
+     * Loads all cards from the primary data source (now TCG CSV).
      */
-    suspend fun preloadAllCardsFromFirestore(): List<CardData>
+    suspend fun preloadAllCardsFromDataSource(): List<CardData> // Renamed for clarity
 
-    /**
-     * Finds a card by its set code.
-     *
-     * @param setCode The set code of the card to find.
-     * @return The [CardData] object if found, null otherwise.
-     */
+    // findCardBySetCode might become less efficient if you have to parse all CSVs each time.
+    // Caching will be crucial here.
     suspend fun findCardBySetCode(setCode: String): CardData?
 
-    /**
-     * Retrieves cached cards.
-     *
-     * @return A list of [CardData] objects representing the cached cards.
-     */
+    // These caching related methods might be better suited solely for CardCacheRepository
+    // or you can have default implementations here if some repositories don't cache.
     suspend fun getCachedCards(): List<CardData>
-
-    /**
-     * Clears the cached cards.
-     */
     suspend fun clearCachedCards()
 }
