@@ -1,17 +1,21 @@
 package com.example.yugiohcardscanner.ui.components
 
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme // Import MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
@@ -35,7 +39,10 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem("profile", "Profile", Icons.Default.Person)
     )
 
-    NavigationBar {
+    NavigationBar(
+        modifier = Modifier.height(80.dp),
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
         items.forEach { item ->
             NavigationBarItem(
                 selected = currentDestination == item.route,
