@@ -25,11 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
 import com.example.yugiohcardscanner.data.models.CardData
 
 /**
@@ -39,6 +42,9 @@ import com.example.yugiohcardscanner.data.models.CardData
  * image, name, set information, rarity, number, market price, and the count
  * of how many of that card the user has. It also includes a button to remove
  * the card from the collection.
+ * The image loading logic prioritizes a local `storageUrl` if available,
+ * otherwise it checks if the `imageUrl` points to a local drawable resource.
+ * If neither is true, it attempts to load the `imageUrl` as a network resource.
  *
  * @param card The [CardData] object containing the card's information.
  * @param onRemoveFromCollection Callback function to be executed when the
@@ -67,8 +73,21 @@ fun CardItem(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // Image
+                val context = LocalContext.current
+                val imageRequest = if (card.storageUrl == null && card.imageUrl?.startsWith("drawable/") == true) {
+                    val drawableName = card.imageUrl.substringAfter("drawable/")
+                    val resourceId = context.resources.getIdentifier(drawableName, "drawable", context.packageName)
+                    ImageRequest.Builder(LocalPlatformContext.current)
+                        .data(resourceId)
+                        .build()
+                } else {
+                    ImageRequest.Builder(LocalPlatformContext.current)
+                        .data(card.storageUrl ?: card.imageUrl) // Prioritize storageUrl if available
+                        .build()
+                }
+
                 AsyncImage(
-                    model = card.storageUrl ?: card.imageUrl,
+                    model = imageRequest,
                     contentDescription = card.name,
                     modifier = Modifier
                         .height(150.dp)

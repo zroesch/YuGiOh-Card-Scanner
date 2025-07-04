@@ -18,10 +18,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.yugiohcardscanner.ui.components.BottomNavBar
+import androidx.navigation.compose.rememberNavController
+import com.example.yugiohcardscanner.data.models.CardData
 import com.example.yugiohcardscanner.ui.collection.components.CollectionSearchBar
 import com.example.yugiohcardscanner.ui.collection.components.CollectionSortingBottomSheet
 import com.example.yugiohcardscanner.ui.shared.SharedCardViewModel
@@ -89,4 +91,17 @@ fun CollectionScreen(
             onDismiss = { isSortSheetVisible = false }
         )
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CollectionScreenPreview() {
+    // FakeCollectionRepository is now initialized with its own default placeholder cards
+    // including the new drawable image URLs.
+    val fakeCollectionRepo = FakeCollectionRepository()
+    val sharedCardViewModel = SharedCardViewModel(fakeCollectionRepo)
+    CollectionScreen(
+        navController = rememberNavController(),
+        viewModel = sharedCardViewModel
+    )
 }

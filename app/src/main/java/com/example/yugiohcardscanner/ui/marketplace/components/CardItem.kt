@@ -26,11 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
 import com.example.yugiohcardscanner.data.models.CardData
 
 /**
@@ -39,6 +42,8 @@ import com.example.yugiohcardscanner.data.models.CardData
  * This function displays a card's image, name, set name, rarity, number,
  * market price, and an "Add to Collection" button. It's designed to be used
  * in a list or grid layout, such as in the Marketplace screen.
+ * The image loading logic checks if the `imageUrl` points to a local drawable resource.
+ * If not, it attempts to load the `imageUrl` as a network resource.
  *
  * @param card The [CardData] object containing the card's information.
  * @param onAddToCollection Callback function to be executed when the
@@ -69,8 +74,21 @@ fun CardItem(
                 // Image
                 Log.d("CardItem", "Loading image from: ${card.imageUrl}")
 
+                val context = LocalContext.current
+                val imageRequest = if (card.imageUrl?.startsWith("drawable/") == true) {
+                    val drawableName = card.imageUrl.substringAfter("drawable/")
+                    val resourceId = context.resources.getIdentifier(drawableName, "drawable", context.packageName)
+                    ImageRequest.Builder(LocalPlatformContext.current)
+                        .data(resourceId)
+                        .build()
+                } else {
+                    ImageRequest.Builder(LocalPlatformContext.current)
+                        .data(card.imageUrl)
+                        .build()
+                }
+
                 AsyncImage(
-                    model = card.imageUrl,
+                    model = imageRequest,
                     contentDescription = card.name,
                     modifier = Modifier
                         .height(150.dp) // Fixed height for the image
