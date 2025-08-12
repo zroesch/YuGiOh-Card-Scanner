@@ -87,17 +87,17 @@ class FirebaseCardRepository @Inject constructor(
      *
      * @return An empty list of [CardData].
      */
-    override suspend fun getCachedCards(): List<CardData> {
-        return emptyList() // Caching is handled by CardCacheRepository
-    }
+//    override suspend fun getCachedCards(): List<CardData> {
+//        return emptyList() // Caching is handled by CardCacheRepository
+//    }
 
     /**
      * No-op, as caching is not handled by this repository.
      * Caching is managed by [CardCacheRepository].
      */
-    override suspend fun clearCachedCards() {
-        // No-op as FirebaseCardRepository doesn't handle caching
-    }
+//    override suspend fun clearCachedCards() {
+//        // No-op as FirebaseCardRepository doesn't handle caching
+//    }
 
 
     // ✅ Load next batch of cards (paginated)

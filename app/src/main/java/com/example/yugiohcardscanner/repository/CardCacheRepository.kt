@@ -12,8 +12,8 @@ import javax.inject.Singleton
 class CardCacheRepository @Inject constructor(
     private val allCardDao: AllCardDao,
     private val remoteCardRepository: CardRepository // Inject the interface
-) {
-    suspend fun cacheCards(cards: List<CardData>) {
+) : CardCacheOperations {
+    override suspend fun cacheCards(cards: List<CardData>) {
         val entities = cards.map {
             AllCardEntity(
                 productId = it.productId,
@@ -28,20 +28,20 @@ class CardCacheRepository @Inject constructor(
         allCardDao.insertAllCards(entities)
     }
 
-    suspend fun getCachedCards(): List<CardData> {
+    override suspend fun getCachedCards(): List<CardData> {
         return allCardDao.getAllCachedCards().map { it.toCardData() }
     }
 
-    suspend fun clearCachedCards() {
+    override suspend fun clearCachedCards() {
         allCardDao.clearAllCachedCards()
     }
 
-    suspend fun findCardBySetCode(setCode: String): CardData? {
+    override suspend fun findCardBySetCode(setCode: String): CardData? {
         val cachedCard = allCardDao.findCardBySetCode(setCode)?.toCardData()
         if (cachedCard != null) {
             return cachedCard
         }
-        // If not in cache, you might not want to fetch EVERYTHING just for one card
+        // If not in cache, you might not want to fetch EVERYTHING just for one card`
         // if the remote source is CSV parsing. This behavior might need rethinking.
         // For now, it mirrors the old logic but will be less efficient.
         // Consider if this method is still needed or if search should primarily be on cached data.
@@ -51,7 +51,7 @@ class CardCacheRepository @Inject constructor(
         return null // Or trigger a full sync if absolutely necessary
     }
 
-    suspend fun ensureCardsAreCached() {
+    override suspend fun ensureCardsAreCached() {
         if (allCardDao.getAllCachedCards().isEmpty()) {
             val cards = remoteCardRepository.preloadAllCardsFromDataSource() // Use the new method
             cacheCards(cards)

@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.yugiohcardscanner.data.models.CardData
 import com.example.yugiohcardscanner.data.models.SortType
-import com.example.yugiohcardscanner.repository.CardCacheRepository
-import com.example.yugiohcardscanner.repository.CardRepository // Keep injecting the interface
+import com.example.yugiohcardscanner.repository.CardCacheOperations
+import com.example.yugiohcardscanner.repository.CardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,12 +22,12 @@ import javax.inject.Inject
  * sorting cards based on user preferences, and updating the UI state accordingly.
  *
  * @property cardRepository The repository for interacting with card data (now CSV-based).
- * @property cardCacheRepository The repository for caching card data.
+ * @property cardCacheOperations The repository for caching card data.
  */
 @HiltViewModel
 class MarketplaceViewModel @Inject constructor(
     private val cardRepository: CardRepository, // Hilt will provide CsvCardRepository here
-    private val cardCacheRepository: CardCacheRepository
+    private val cardCacheOperations: CardCacheOperations
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
@@ -49,7 +49,7 @@ class MarketplaceViewModel @Inject constructor(
             Log.d("MarketplaceViewModel", "loadCards called")
             _uiState.update { it.copy(isLoading = true) } // Optional: set loading state
 
-            val cachedCards = cardCacheRepository.getCachedCards()
+            val cachedCards = cardCacheOperations.getCachedCards()
             Log.d("MarketplaceViewModel", "Cached cards count: ${cachedCards.size}")
 
             if (cachedCards.isNotEmpty()) {
@@ -63,12 +63,11 @@ class MarketplaceViewModel @Inject constructor(
                 }
             } else {
                 Log.d("MarketplaceViewModel", "Cache empty. Loading from remote CSV data source.")
-                // Use the method from the CardRepository interface, which is now implemented by CsvCardRepository
                 val remoteCards = cardRepository.preloadAllCardsFromDataSource()
                 Log.d("MarketplaceViewModel", "Remote cards loaded from CSV: ${remoteCards.size}")
 
                 if (remoteCards.isNotEmpty()) {
-                    cardCacheRepository.cacheCards(remoteCards)
+                    cardCacheOperations.cacheCards(remoteCards)
                     Log.d("MarketplaceViewModel", "Remote cards cached.")
                 } else {
                     Log.w("MarketplaceViewModel", "No cards were loaded from the remote CSV data source.")
@@ -146,12 +145,3 @@ class MarketplaceViewModel @Inject constructor(
         return filtered.sortedWith(sortType.getComparator())
     }
 }
-
-// Ensure your MarketplaceUiState includes isLoading if you use it:
-// data class MarketplaceUiState(
-//    val allCards: List<CardData> = emptyList(),
-//    val filteredCards: List<CardData> = emptyList(),
-//    val searchQuery: String = "",
-//    val selectedSort: SortType = SortType.NAME_ASC, // Default sort
-//    val isLoading: Boolean = false
-// )

@@ -1,5 +1,7 @@
 package com.example.yugiohcardscanner.di
 
+import com.example.yugiohcardscanner.repository.CardCacheOperations
+import com.example.yugiohcardscanner.repository.CardCacheRepository
 import com.example.yugiohcardscanner.repository.CardRepository
 import com.example.yugiohcardscanner.repository.CsvCardRepository
 import dagger.Binds
@@ -17,4 +19,10 @@ abstract class RepositoryModule {
     abstract fun bindCardRepository(
         impl: CsvCardRepository
     ): CardRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCardCacheOperations(
+        impl: CardCacheRepository
+    ): CardCacheOperations
 }

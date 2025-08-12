@@ -6,14 +6,10 @@ interface CardRepository {
     /**
      * Loads all cards from the primary data source (now TCG CSV).
      */
-    suspend fun preloadAllCardsFromDataSource(): List<CardData> // Renamed for clarity
+    suspend fun preloadAllCardsFromDataSource(): List<CardData>
 
-    // findCardBySetCode might become less efficient if you have to parse all CSVs each time.
-    // Caching will be crucial here.
+    /**
+     * Finds a card by its set code from the primary data source.
+     */
     suspend fun findCardBySetCode(setCode: String): CardData?
-
-    // These caching related methods might be better suited solely for CardCacheRepository
-    // or you can have default implementations here if some repositories don't cache.
-    suspend fun getCachedCards(): List<CardData>
-    suspend fun clearCachedCards()
 }

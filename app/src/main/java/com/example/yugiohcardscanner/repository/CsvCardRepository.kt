@@ -56,29 +56,4 @@ class CsvCardRepository @Inject constructor(
         val allCards = preloadAllCardsFromDataSource()
         return allCards.find { it.extNumber.equals(setCode, ignoreCase = true) } // Added ignoreCase for robustness
     }
-
-    /**
-     * Gets cached cards. This repository does not implement caching.
-     *
-     * This method is part of the [CardRepository] interface but is not implemented
-     * by [CsvCardRepository] as it does not handle caching directly. Caching is
-     * expected to be handled by another repository (e.g., [CardCacheRepository]).
-     *
-     * @return An empty list, as this repository does not cache cards.
-     */
-    override suspend fun getCachedCards(): List<CardData> {
-        Log.d("CsvCardRepository", "getCachedCards called on CsvCardRepository. This repository does not cache. Returning empty list.")
-        return emptyList() // This repository doesn't handle caching.
-    }
-
-    /**
-     * Clears cached cards. This repository does not implement caching.
-     *
-     * This method is part of the [CardRepository] interface but is a no-op
-     * in [CsvCardRepository] as it does not handle caching directly.
-     */
-    override suspend fun clearCachedCards() {
-        Log.d("CsvCardRepository", "clearCachedCards called on CsvCardRepository. No-op as this repository does not cache.")
-        // No-op, caching handled by another repository
-    }
 }
