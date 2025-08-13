@@ -9,7 +9,7 @@ import com.example.yugiohcardscanner.ui.collection.CollectionScreen
 import com.example.yugiohcardscanner.ui.home.HomeScreen
 import com.example.yugiohcardscanner.ui.marketplace.MarketplaceScreen
 import com.example.yugiohcardscanner.ui.marketplace.MarketplaceViewModel
-import com.example.yugiohcardscanner.ui.profile.ProfileScreen
+//import com.example.yugiohcardscanner.ui.profile.ProfileScreen
 import com.example.yugiohcardscanner.ui.scanner.ScannerScreen
 import com.example.yugiohcardscanner.ui.scanner.ScannerViewModel
 import com.example.yugiohcardscanner.ui.scanner.components.ReviewScreen
@@ -54,9 +54,9 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        composable("profile") {
-            ProfileScreen()
-        }
+//        composable("profile") {
+//            ProfileScreen()
+//        }
 
         composable("scanner") {
             ScannerScreen(
