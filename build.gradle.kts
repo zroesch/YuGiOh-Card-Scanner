@@ -5,7 +5,7 @@ plugins {
 //    alias(libs.plugins.kotlin.kapt) apply false
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.hilt) apply false
-    id("com.google.gms.google-services") version "4.4.2" apply false
+//    id("com.google.gms.google-services") version "4.4.2" apply false  Not using firebase currently so disabling this
     id("com.google.devtools.ksp") version "2.0.21-1.0.27" apply false
 }
 

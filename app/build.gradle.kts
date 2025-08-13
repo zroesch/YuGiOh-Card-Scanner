@@ -4,7 +4,7 @@ plugins {
 //    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
-    id("com.google.gms.google-services")
+//    id("com.google.gms.google-services") Not using firebase currently so disabling this
     id("com.google.devtools.ksp")
 }
 
@@ -41,7 +41,18 @@ android {
     buildFeatures {
         compose = true
     }
+
 }
+
+//configurations {
+//    // Fix for KSP compatibility with certain Gradle/plugin versions
+//    configureEach {
+//        if (name.endsWith("ksp")) {
+//            isCanBeConsumed = false
+//        }
+//    }
+//}
+
 
 dependencies {
 
