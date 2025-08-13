@@ -17,8 +17,8 @@ import javax.inject.Singleton
  * @property cardDao The data access object for interacting with the local card database.
  */
 @Singleton
-class CollectionRepository @Inject constructor(
-    private val cardDao: CardDao
+open class CollectionRepository @Inject constructor(
+    private val cardDao: CardDao?
 ) {
     /**
      * Adds a card to the user's collection.
@@ -28,10 +28,10 @@ class CollectionRepository @Inject constructor(
      *
      * @param card The [CardData] object representing the card to be added.
      */
-    suspend fun addCardToCollection(card: CardData) {
-        val existingCard = cardDao.getCardById(card.productId)
+    open suspend fun addCardToCollection(card: CardData) {
+        val existingCard = cardDao?.getCardById(card.productId)
         val updatedCount = (existingCard?.count ?: 0) + 1
-        cardDao.insertCard(card.toEntity(updatedCount))
+        cardDao?.insertCard(card.toEntity(updatedCount))
     }
 
     /**
@@ -42,13 +42,13 @@ class CollectionRepository @Inject constructor(
      *
      * @param card The [CardData] object representing the card to be removed.
      */
-    suspend fun removeCardFromCollection(card: CardData) {
-        val existingCard = cardDao.getCardById(card.productId)
+    open suspend fun removeCardFromCollection(card: CardData) {
+        val existingCard = cardDao?.getCardById(card.productId)
         if (existingCard != null && existingCard.count > 1) {
             val updatedCount = existingCard.count - 1
-            cardDao.insertCard(card.toEntity(updatedCount))
+            cardDao?.insertCard(card.toEntity(updatedCount))
         } else {
-            cardDao.deleteCard(card.toEntity())
+            cardDao?.deleteCard(card.toEntity())
         }
     }
 
@@ -57,8 +57,8 @@ class CollectionRepository @Inject constructor(
      *
      * @return A list of [CardData] objects representing the cards in the collection.
      */
-    suspend fun getAllCardsFromCollection(): List<CardData> {
-        return cardDao.getAllCards().map { it.toCardData() }
+    open suspend fun getAllCardsFromCollection(): List<CardData> {
+        return cardDao?.getAllCards()?.map { it.toCardData() } ?: emptyList()
     }
 
     /**
@@ -66,8 +66,8 @@ class CollectionRepository @Inject constructor(
      *
      * @return The total market value as a [Double].
      */
-    suspend fun getTotalCollectionValue(): Double {
-        return cardDao.getAllCards().sumOf { it.marketPrice * it.count }
+    open suspend fun getTotalCollectionValue(): Double {
+        return cardDao?.getAllCards()?.sumOf { it.marketPrice * it.count } ?: 0.0
     }
 
     /**
@@ -75,14 +75,14 @@ class CollectionRepository @Inject constructor(
      *
      * @return The total number of cards as an [Int].
      */
-    suspend fun getNumberOfCards(): Int {
-        return cardDao.getAllCards().sumOf { it.count }
+    open suspend fun getNumberOfCards(): Int {
+        return cardDao?.getAllCards()?.sumOf { it.count } ?: 0
     }
 
     /**
      * Clears the user's entire card collection.
      */
-    suspend fun clearUserCollection() {
-        cardDao.clearCollection()
+    open suspend fun clearUserCollection() {
+        cardDao?.clearCollection()
     }
 }
