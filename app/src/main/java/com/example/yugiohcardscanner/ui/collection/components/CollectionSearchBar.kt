@@ -51,7 +51,7 @@ fun CollectionSearchBar(
     onShowSetsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+    Column(modifier = modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {

@@ -2,6 +2,7 @@ package com.example.yugiohcardscanner.ui.marketplace.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -108,7 +109,7 @@ fun SearchBar(
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+//        Spacer(modifier = Modifier.height(6.dp))
 
         // Bottom Row: Show Sets Button aligned to end
         Row(
@@ -119,6 +120,7 @@ fun SearchBar(
                 onClick = onShowSetsClick,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2C)),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Text("Show Sets", color = Color.White, fontSize = 14.sp)
             }

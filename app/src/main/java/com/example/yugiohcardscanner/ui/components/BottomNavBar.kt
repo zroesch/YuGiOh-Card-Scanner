@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme // Import MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -26,9 +26,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
  * navigate between different sections of the app: Home, Collection, Marketplace, and Profile.
  *
  * @param navController The [NavController] used for navigating between screens.
+ * @param modifier Modifier to be applied to the NavigationBar.
  */
 @Composable
-fun BottomNavBar(navController: NavController) {
+fun BottomNavBar(navController: NavController, modifier: Modifier = Modifier) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
 
@@ -40,14 +41,13 @@ fun BottomNavBar(navController: NavController) {
     )
 
     NavigationBar(
-        modifier = Modifier.height(80.dp),
+        modifier = modifier.height(72.dp),
         containerColor = MaterialTheme.colorScheme.surface
     ) {
         items.forEach { item ->
             NavigationBarItem(
                 selected = currentDestination == item.route,
                 onClick = {
-                    // Prevent navigating to the current destination again
                     if (currentDestination != item.route) {
                         navController.navigate(item.route)
                     }
