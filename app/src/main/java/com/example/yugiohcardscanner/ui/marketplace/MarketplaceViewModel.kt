@@ -7,141 +7,127 @@ import com.example.yugiohcardscanner.data.models.CardData
 import com.example.yugiohcardscanner.data.models.SortType
 import com.example.yugiohcardscanner.repository.CardCacheOperations
 import com.example.yugiohcardscanner.repository.CardRepository
+import com.example.yugiohcardscanner.ui.collection.CollectionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
  * ViewModel for the Marketplace screen.
- *
- * This ViewModel manages the UI state and logic for the Marketplace screen,
- * including loading cards, filtering cards based on search queries,
- * sorting cards based on user preferences, and updating the UI state accordingly.
- *
- * @property cardRepository The repository for interacting with card data (now CSV-based).
- * @property cardCacheOperations The repository for caching card data.
  */
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class MarketplaceViewModel @Inject constructor(
     private val cardRepository: CardRepository, // Hilt will provide CsvCardRepository here
-    private val cardCacheOperations: CardCacheOperations
+    private val cardCacheOperations: CardCacheOperations,
+    private val collectionRepository: CollectionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState
 
+    private val _searchQueryFlow = MutableStateFlow("")
+
     init {
         loadCards()
+        
+        // Debounce search query to prevent UI lag when typing
+        viewModelScope.launch {
+            _searchQueryFlow
+                .debounce(300) // Wait 300ms after user stops typing
+                .collect { query ->
+                    val currentState = _uiState.value
+                    val filtered = applySortAndFilter(currentState.allCards, query, currentState.selectedSort)
+                    _uiState.update { it.copy(filteredCards = filtered) }
+                }
+        }
     }
 
-    /**
-     * Loads the cards from the cache or the primary data source (CSV).
-     *
-     * This method first checks if cards are available in the cache. If not,
-     * it fetches them from the CSV data source via CardRepository, caches them,
-     * and then updates the UI state.
-     */
     private fun loadCards() {
         viewModelScope.launch {
             Log.d("MarketplaceViewModel", "loadCards called")
-            _uiState.update { it.copy(isLoading = true) } // Optional: set loading state
+            _uiState.update { it.copy(isLoading = true) }
 
-            val cachedCards = cardCacheOperations.getCachedCards()
-            Log.d("MarketplaceViewModel", "Cached cards count: ${cachedCards.size}")
+            var allCards = withContext(Dispatchers.IO) { cardCacheOperations.getCachedCards() }
+            Log.d("MarketplaceViewModel", "Cached cards count: ${allCards.size}")
 
-            if (cachedCards.isNotEmpty()) {
-                _uiState.update {
-                    Log.d("MarketplaceViewModel", "Using cached cards")
-                    it.copy(
-                        allCards = cachedCards,
-                        filteredCards = applySortAndFilter(cachedCards, it.searchQuery, it.selectedSort),
-                        isLoading = false
-                    )
-                }
-            } else {
+            if (allCards.isEmpty()) {
                 Log.d("MarketplaceViewModel", "Cache empty. Loading from remote CSV data source.")
-                val remoteCards = cardRepository.preloadAllCardsFromDataSource()
-                Log.d("MarketplaceViewModel", "Remote cards loaded from CSV: ${remoteCards.size}")
+                allCards = cardRepository.preloadAllCardsFromDataSource()
+                Log.d("MarketplaceViewModel", "Remote cards loaded from CSV: ${allCards.size}")
 
-                if (remoteCards.isNotEmpty()) {
-                    cardCacheOperations.cacheCards(remoteCards)
+                if (allCards.isNotEmpty()) {
+                    // This runs on IO thread via Room's suspend functions
+                    cardCacheOperations.cacheCards(allCards)
                     Log.d("MarketplaceViewModel", "Remote cards cached.")
-                } else {
-                    Log.w("MarketplaceViewModel", "No cards were loaded from the remote CSV data source.")
                 }
+            }
 
-                _uiState.update {
-                    Log.d("MarketplaceViewModel", "Updating UI with remote cards from CSV")
-                    it.copy(
-                        allCards = remoteCards,
-                        filteredCards = applySortAndFilter(remoteCards, it.searchQuery, it.selectedSort),
-                        isLoading = false
-                    )
-                }
+            val filtered = applySortAndFilter(allCards, _uiState.value.searchQuery, _uiState.value.selectedSort)
+            _uiState.update {
+                it.copy(
+                    allCards = allCards,
+                    filteredCards = filtered,
+                    isLoading = false
+                )
             }
         }
     }
 
-    /**
-     * Updates the search query and filters the card list accordingly.
-     *
-     * @param query The new search query string.
-     */
     fun updateSearchQuery(query: String) {
-        _uiState.update {
-            it.copy(
-                searchQuery = query,
-                filteredCards = applySortAndFilter(it.allCards, query, it.selectedSort)
-            )
-        }
+        val currentState = _uiState.value
+        if (currentState.searchQuery == query) return
+        
+        // Update query immediately so UI reflects input, but keep old filtered list while processing
+        _uiState.update { it.copy(searchQuery = query) }
+        
+        // Pass it to the flow for the 300ms delayed filtering
+        _searchQueryFlow.value = query
     }
 
-    /**
-     * Clears the search query and resets the filtered card list.
-     */
     fun clearSearchQuery() {
         updateSearchQuery("")
     }
 
-    /**
-     * Updates the sorting method and resorts the card list accordingly.
-     *
-     * @param sortType The new sorting method to apply.
-     */
     fun updateSort(sortType: SortType) {
-        _uiState.update {
-            it.copy(
-                selectedSort = sortType,
-                filteredCards = applySortAndFilter(it.allCards, it.searchQuery, sortType)
-            )
+        val currentState = _uiState.value
+        if (currentState.selectedSort == sortType) return
+
+        _uiState.update { it.copy(selectedSort = sortType) }
+
+        viewModelScope.launch {
+            val filtered = applySortAndFilter(currentState.allCards, currentState.searchQuery, sortType)
+            _uiState.update { it.copy(filteredCards = filtered) }
         }
     }
 
-    /**
-     * Applies the current sort and filter settings to the given card list.
-     *
-     * @param cards The list of cards to filter and sort.
-     * @param query The current search query string.
-     * @param sortType The current sorting method.
-     * @return The filtered and sorted list of cards.
-     */
-    private fun applySortAndFilter(
+    fun addToCollection(card: CardData) {
+        viewModelScope.launch {
+            collectionRepository.addCardToCollection(card)
+        }
+    }
+
+    private suspend fun applySortAndFilter(
         cards: List<CardData>,
         query: String,
         sortType: SortType
-    ): List<CardData> {
+    ): List<CardData> = withContext(Dispatchers.Default) {
         val filtered = if (query.isBlank()) {
             cards
         } else {
             cards.filter {
                 it.name.contains(query, ignoreCase = true) ||
-                        it.setName.contains(query, ignoreCase = true) || // Optional: also search by set name
-                        it.extNumber.contains(query, ignoreCase = true)  // Optional: also search by card number
+                        it.setName.contains(query, ignoreCase = true) ||
+                        it.extNumber.contains(query, ignoreCase = true)
             }
         }
-        return filtered.sortedWith(sortType.getComparator())
+        filtered.sortedWith(sortType.getComparator())
     }
 }

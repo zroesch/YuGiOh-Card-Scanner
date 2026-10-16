@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.example.yugiohcardscanner.data.models.CardData
 
 /**
@@ -79,10 +80,12 @@ fun CardItem(
                     val resourceId = context.resources.getIdentifier(drawableName, "drawable", context.packageName)
                     ImageRequest.Builder(LocalPlatformContext.current)
                         .data(resourceId)
+                        .crossfade(true)
                         .build()
                 } else {
                     ImageRequest.Builder(LocalPlatformContext.current)
                         .data(card.storageUrl ?: card.imageUrl) // Prioritize storageUrl if available
+                        .crossfade(true)
                         .build()
                 }
 
@@ -92,7 +95,8 @@ fun CardItem(
                     modifier = Modifier
                         .height(150.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.DarkGray), // Placeholder background while loading
                     contentScale = ContentScale.Fit
                 )
 

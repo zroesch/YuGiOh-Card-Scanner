@@ -14,27 +14,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.yugiohcardscanner.repository.FakeCardCacheRepository
-import com.example.yugiohcardscanner.repository.FakeCardRepository
-import com.example.yugiohcardscanner.ui.collection.FakeCollectionRepository
 import com.example.yugiohcardscanner.ui.marketplace.components.SearchBar
 import com.example.yugiohcardscanner.ui.marketplace.components.SortingBottomSheet
-import com.example.yugiohcardscanner.ui.shared.SharedCardViewModel
 
 /**
  * Displays the marketplace screen, allowing users to search for cards,
  * sort them, and add them to their collection.
  */
+import com.example.yugiohcardscanner.ui.navigation.HomeRoute
+import com.example.yugiohcardscanner.ui.navigation.ScannerRoute
+
 @Composable
 fun MarketplaceScreen(
     navController: NavController,
-    marketplaceViewModel: MarketplaceViewModel = hiltViewModel(),
-    sharedCardViewModel: SharedCardViewModel = hiltViewModel()
+    marketplaceViewModel: MarketplaceViewModel = hiltViewModel()
 ) {
     val uiState by marketplaceViewModel.uiState.collectAsState()
     var isSortSheetVisible by remember { mutableStateOf(false) }
@@ -53,15 +50,15 @@ fun MarketplaceScreen(
                 onQueryChanged = { marketplaceViewModel.updateSearchQuery(it) },
                 onClearQuery = { marketplaceViewModel.clearSearchQuery() },
                 onSortClick = { isSortSheetVisible = true },
-                onShowSetsClick = { navController.navigate("sets") },
-                onCameraClick = { navController.navigate("scanner") }
+                onShowSetsClick = { navController.navigate(HomeRoute) },
+                onCameraClick = { navController.navigate(ScannerRoute) }
             )
         }
 
         MarketplaceContent(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             cards = uiState.filteredCards,
-            onAddToCollection = { card -> sharedCardViewModel.addToCollection(card) },
+            onAddToCollection = { card -> marketplaceViewModel.addToCollection(card) },
         )
     }
 
@@ -74,18 +71,7 @@ fun MarketplaceScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun MarketplaceScreenPreview() {
-    val fakeRemoteRepo = FakeCardRepository()
-    val fakeCacheRepo = FakeCardCacheRepository()
-    val marketplaceViewModel = MarketplaceViewModel(fakeRemoteRepo, fakeCacheRepo)
-    val fakeCollectionRepo = FakeCollectionRepository()
-    val sharedCardViewModel = SharedCardViewModel(fakeCollectionRepo)
-
-    MarketplaceScreen(
-        navController = rememberNavController(),
-        marketplaceViewModel = marketplaceViewModel,
-        sharedCardViewModel = sharedCardViewModel
-    )
-}
+// @Preview(showBackground = true)
+// @Composable
+// fun MarketplaceScreenPreview() {
+// }
