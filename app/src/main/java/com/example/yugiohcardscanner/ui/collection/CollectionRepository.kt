@@ -4,17 +4,15 @@ import com.example.yugiohcardscanner.data.local.CardDao
 import com.example.yugiohcardscanner.data.models.CardData
 import com.example.yugiohcardscanner.data.models.toEntity
 import com.example.yugiohcardscanner.data.models.toCardData
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Repository class for managing the user's collection of cards.
- *
- * This class provides methods to add, remove, retrieve, and manage cards in the collection.
- * It acts as an intermediary between the data sources (like the local database) and the
- * UI or view models.
- *
- * @property cardDao The data access object for interacting with the local card database.
  */
 @Singleton
 open class CollectionRepository @Inject constructor(
@@ -22,11 +20,6 @@ open class CollectionRepository @Inject constructor(
 ) {
     /**
      * Adds a card to the user's collection.
-     *
-     * If the card already exists in the collection, its count is incremented.
-     * Otherwise, the card is added with a count of 1.
-     *
-     * @param card The [CardData] object representing the card to be added.
      */
     open suspend fun addCardToCollection(card: CardData) {
         val existingCard = cardDao?.getCardById(card.productId)
@@ -36,11 +29,6 @@ open class CollectionRepository @Inject constructor(
 
     /**
      * Removes a card from the user's collection.
-     *
-     * If the card's count is greater than 1, the count is decremented.
-     * If the card's count is 1, the card is removed entirely from the collection.
-     *
-     * @param card The [CardData] object representing the card to be removed.
      */
     open suspend fun removeCardFromCollection(card: CardData) {
         val existingCard = cardDao?.getCardById(card.productId)
@@ -53,30 +41,26 @@ open class CollectionRepository @Inject constructor(
     }
 
     /**
-     * Retrieves all cards from the user's collection.
-     *
-     * @return A list of [CardData] objects representing the cards in the collection.
+     * Retrieves a flow of all cards from the user's collection.
      */
-    open suspend fun getAllCardsFromCollection(): List<CardData> {
-        return cardDao?.getAllCards()?.map { it.toCardData() } ?: emptyList()
+    open fun getAllCardsFlow(): Flow<List<CardData>> {
+        return cardDao?.getAllCards()?.map { list -> list.map { it.toCardData() } } ?: emptyFlow()
     }
 
     /**
      * Calculates the total market value of the user's collection.
-     *
-     * @return The total market value as a [Double].
      */
     open suspend fun getTotalCollectionValue(): Double {
-        return cardDao?.getAllCards()?.sumOf { it.marketPrice * it.count } ?: 0.0
+        return cardDao?.getAllCards()?.map { list -> list.sumOf { it.marketPrice * it.count } }
+            ?.firstOrNull() ?: 0.0
     }
 
     /**
      * Gets the total number of cards in the user's collection.
-     *
-     * @return The total number of cards as an [Int].
      */
     open suspend fun getNumberOfCards(): Int {
-        return cardDao?.getAllCards()?.sumOf { it.count } ?: 0
+        return cardDao?.getAllCards()?.map { list -> list.sumOf { it.count } }
+            ?.firstOrNull() ?: 0
     }
 
     /**

@@ -5,6 +5,8 @@ import com.example.yugiohcardscanner.data.local.AllCardDao
 import com.example.yugiohcardscanner.data.local.AllCardEntity
 import com.example.yugiohcardscanner.data.models.CardData
 import com.example.yugiohcardscanner.data.models.toCardData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,42 +15,39 @@ class CardCacheRepository @Inject constructor(
     private val allCardDao: AllCardDao,
     private val remoteCardRepository: CardRepository // Inject the interface
 ) : CardCacheOperations {
-    override suspend fun cacheCards(cards: List<CardData>) {
-        val entities = cards.map {
-            AllCardEntity(
-                productId = it.productId,
-                name = it.name,
-                setName = it.setName,
-                extNumber = it.extNumber,
-                extRarity = it.extRarity,
-                imageUrl = it.imageUrl, // Store the direct image URL
-                marketPrice = it.marketPrice
-            )
+    override suspend fun cacheCards(cards: List<CardData>) = withContext(Dispatchers.IO) {
+        // Chunking prevents SQLite memory crashes during massive syncs
+        cards.chunked(1000).forEach { chunk ->
+            val entities = chunk.map {
+                AllCardEntity(
+                    productId = it.productId,
+                    name = it.name,
+                    setName = it.setName,
+                    extNumber = it.extNumber,
+                    extRarity = it.extRarity,
+                    imageUrl = it.imageUrl, // Store the direct image URL
+                    marketPrice = it.marketPrice
+                )
+            }
+            allCardDao.insertAllCards(entities)
         }
-        allCardDao.insertAllCards(entities)
     }
 
-    override suspend fun getCachedCards(): List<CardData> {
-        return allCardDao.getAllCachedCards().map { it.toCardData() }
+    override suspend fun getCachedCards(): List<CardData> = withContext(Dispatchers.IO) {
+        allCardDao.getAllCachedCards().map { it.toCardData() }
     }
 
     override suspend fun clearCachedCards() {
         allCardDao.clearAllCachedCards()
     }
 
-    override suspend fun findCardBySetCode(setCode: String): CardData? {
+    override suspend fun findCardBySetCode(setCode: String): CardData? = withContext(Dispatchers.IO) {
         val cachedCard = allCardDao.findCardBySetCode(setCode)?.toCardData()
         if (cachedCard != null) {
-            return cachedCard
+            return@withContext cachedCard
         }
-        // If not in cache, you might not want to fetch EVERYTHING just for one card`
-        // if the remote source is CSV parsing. This behavior might need rethinking.
-        // For now, it mirrors the old logic but will be less efficient.
-        // Consider if this method is still needed or if search should primarily be on cached data.
         Log.d("CardCacheRepository", "Card with setCode $setCode not found in cache. Fetching from remote is not efficient here.")
-        // Optionally, trigger a full refresh and then search, but that's heavy.
-        // Or, simply return null if not in cache, and ensure cache is populated initially.
-        return null // Or trigger a full sync if absolutely necessary
+        return@withContext null
     }
 
     override suspend fun ensureCardsAreCached() {

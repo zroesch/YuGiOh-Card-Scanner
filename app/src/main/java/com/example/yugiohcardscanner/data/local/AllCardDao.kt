@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 
 /**
  * Data Access Object (DAO) for interacting with the cache of all cards.
@@ -21,6 +22,7 @@ interface AllCardDao {
      *
      * @param cards A list of [AllCardEntity] objects to be inserted.
      */
+    @Transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllCards(cards: List<AllCardEntity>)
 

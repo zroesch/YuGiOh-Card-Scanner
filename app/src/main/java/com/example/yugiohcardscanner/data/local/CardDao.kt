@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Data Access Object (DAO) for interacting with the user's collection of cards.
@@ -20,7 +21,7 @@ interface CardDao {
      * @return A list of [CollectionCardEntity] objects representing the cards.
      */
     @Query("SELECT * FROM user_collection")
-    suspend fun getAllCards(): List<CollectionCardEntity>
+    fun getAllCards(): Flow<List<CollectionCardEntity>>
 
     /**
      * Retrieves a specific card from the user's collection by its product ID.
