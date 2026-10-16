@@ -11,7 +11,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
 import com.example.yugiohcardscanner.ui.navigation.AppNavGraph
+import com.example.yugiohcardscanner.ui.navigation.ScanReviewRoute
+import com.example.yugiohcardscanner.ui.navigation.ScannerRoute
 import com.example.yugiohcardscanner.ui.components.BottomNavBar
 import com.example.yugiohcardscanner.ui.theme.YuGiOhCardScannerTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -57,12 +61,12 @@ class MainActivity : ComponentActivity() {
 fun AppWithNavigation() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val currentDestination = navBackStackEntry?.destination
 
-    // Define routes where the bottom bar should be hidden
-    val hideBottomBarRoutes = listOf("scanner", "scan_review")
-    // Determine whether to show the bottom bar
-    val shouldShowBottomBar = currentRoute !in hideBottomBarRoutes
+    // Check hierarchy for type-safe routes to hide bottom bar safely
+    val shouldShowBottomBar = currentDestination?.hierarchy?.none { destination ->
+        destination.hasRoute<ScannerRoute>() || destination.hasRoute<ScanReviewRoute>()
+    } ?: true
 
     Scaffold(
         bottomBar = {

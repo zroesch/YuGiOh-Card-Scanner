@@ -19,6 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import com.example.yugiohcardscanner.ui.navigation.CollectionRoute
+import com.example.yugiohcardscanner.ui.navigation.HomeRoute
+import com.example.yugiohcardscanner.ui.navigation.MarketplaceRoute
+import kotlin.reflect.KClass
+
 /**
  * Composable function for the bottom navigation bar.
  *
@@ -31,13 +38,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 @Composable
 fun BottomNavBar(navController: NavController, modifier: Modifier = Modifier) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination?.route
+    val currentDestination = navBackStackEntry?.destination
 
     val items = listOf(
-        BottomNavItem("home", "Home", Icons.Default.Home),
-        BottomNavItem("collection", "Collection", Icons.Default.Folder),
-        BottomNavItem("marketplace", "Marketplace", Icons.Default.ShoppingCart),
-        BottomNavItem("profile", "Profile", Icons.Default.Person)
+        BottomNavItem(HomeRoute::class, "Home", Icons.Default.Home),
+        BottomNavItem(CollectionRoute::class, "Collection", Icons.Default.Folder),
+        BottomNavItem(MarketplaceRoute::class, "Marketplace", Icons.Default.ShoppingCart),
+        // BottomNavItem(ProfileRoute::class, "Profile", Icons.Default.Person)
     )
 
     NavigationBar(
@@ -45,11 +52,28 @@ fun BottomNavBar(navController: NavController, modifier: Modifier = Modifier) {
         containerColor = MaterialTheme.colorScheme.surface
     ) {
         items.forEach { item ->
+            val isSelected = currentDestination?.hierarchy?.any { it.hasRoute(item.route) } == true
             NavigationBarItem(
-                selected = currentDestination == item.route,
+                selected = isSelected,
                 onClick = {
-                    if (currentDestination != item.route) {
-                        navController.navigate(item.route)
+                    if (!isSelected) {
+                        // In compose navigation we can use the object instance.
+                        // However, we just have the class. 
+                        // It's better to pass the object instance. Let's fix BottomNavItem.
+                        navController.navigate(
+                            when (item.route) {
+                                HomeRoute::class -> HomeRoute
+                                CollectionRoute::class -> CollectionRoute
+                                MarketplaceRoute::class -> MarketplaceRoute
+                                else -> HomeRoute
+                            }
+                        ) {
+                            popUpTo(HomeRoute) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },
@@ -66,4 +90,4 @@ fun BottomNavBar(navController: NavController, modifier: Modifier = Modifier) {
  * @property label The label to display for this item.
  * @property icon The icon to display for this item.
  */
-data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
+data class BottomNavItem(val route: KClass<*>, val label: String, val icon: ImageVector)

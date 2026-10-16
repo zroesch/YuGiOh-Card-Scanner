@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import java.util.concurrent.Executors
 
 /**
@@ -44,33 +46,29 @@ fun CameraPreview(
 
     var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            cameraExecutor.shutdown()
-        }
-    }
-
-    AndroidView(
-        factory = { previewView },
-        modifier = Modifier.fillMaxSize()
-    ) {
-        cameraProviderFuture.addListener({
-            try {
-                val cameraProvider = cameraProviderFuture.get()
-
-                val preview = Preview.Builder()
-                    .build()
-                    .also {
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_DESTROY) {
+                try {
+                    val cameraProvider = cameraProviderFuture.get()
+                    cameraProvider.unbindAll()
+                } catch (e: Exception) {
+                    Log.e("CameraPreview", "Failed to unbind camera", e)
+                }
+            } else if (event == Lifecycle.Event.ON_RESUME) {
+                try {
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
                         it.setSurfaceProvider(previewView.surfaceProvider)
                     }
 
-                imageCapture = ImageCapture.Builder()
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .build()
-                // Callback that sets the instance of image capture to the scanner screen.
-                imageCapture?.let { onImageCaptureReady(it) }
+                    if (imageCapture == null) {
+                        imageCapture = ImageCapture.Builder()
+                            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                            .build()
+                        onImageCaptureReady(imageCapture!!)
+                    }
 
-                try {
                     cameraProvider.unbindAll()
                     cameraProvider.bindToLifecycle(
                         lifecycleOwner,
@@ -79,11 +77,21 @@ fun CameraPreview(
                         imageCapture,
                     )
                 } catch (e: Exception) {
-                    Log.e("CameraPreview", "Use case binding failed", e)
+                    Log.e("CameraPreview", "Camera initialization/binding failed", e)
                 }
-            } catch (e: Exception) {
-                Log.e("CameraPreview", "Camera initialization failed", e)
             }
-        }, ContextCompat.getMainExecutor(context))
+        }
+        
+        lifecycleOwner.lifecycle.addObserver(observer)
+        
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            cameraExecutor.shutdown()
+        }
     }
+
+    AndroidView(
+        factory = { previewView },
+        modifier = Modifier.fillMaxSize()
+    )
 }
