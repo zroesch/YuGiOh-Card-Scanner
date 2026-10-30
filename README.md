@@ -36,10 +36,9 @@ The app helps users organize their collections and track the value of their card
 | <img width="270" height="600" alt="MarketplaceScreen" src="https://github.com/user-attachments/assets/843af9a6-e42c-4912-824c-2e04657fbec3" /> <img width="270" height="600" alt="MarketplaceScreenSort" src="https://github.com/user-attachments/assets/4f3b3223-2a30-4583-9302-7440144becc3" /> |
 
 
+**Add
+1. Batch mode card scanning
+2. Card detail screen
+3. True Price Accuracy (Condition & Edition Tagging)
 
-
-
-
-
-
-   
+**Fix/add filtering to collection(rarity, set, etc.)
